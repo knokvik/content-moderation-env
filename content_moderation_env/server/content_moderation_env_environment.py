@@ -115,15 +115,13 @@ class ContentModerationEnvironment(Environment):
 
         if action.action_type == ModerationActionType.LABEL:
             if action.category == ContentCategory(gt["true_category"]):
-                reward += 0.5 + (0.2 * len(gt["true_category"]))
+                reward = 1.0
             else:
-                reward -= 0.3
-                if gt["severity"] >= 2:
-                    reward -= 2.0
+                reward = 0.0
         elif action.action_type == ModerationActionType.MODERATE:
-            reward += 0.4 if action.moderate_action else -0.5
+            reward = 1.0 if action.moderate_action else 0.0
         elif action.action_type == ModerationActionType.ESCALATE:
-            reward += 0.3 if gt["severity"] >= 1 else -0.8
+            reward = 1.0 if gt["severity"] >= 1 else 0.0
 
         self.current_step += 1
         done = self.current_step >= len(self.ground_truth)
