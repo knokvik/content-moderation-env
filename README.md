@@ -2,6 +2,52 @@
 
 An e2e framework for creating, deploying and using isolated execution environments for agentic RL training, built using Gymnasium style simple APIs.
 
+## Hackathon Submission: Content Moderation Environment
+
+This repository includes a real-world OpenEnv submission focused on content moderation over short social posts and threads. The agent learns to label, moderate, or escalate content through the standard `step()` / `reset()` / `state()` API.
+
+### Task Overview
+
+- `easy`: simple safe-vs-harmful moderation examples
+- `medium`: mixed categories such as harassment, hate, misinformation, and spam
+- `hard`: contextual multi-turn thread moderation
+
+### Action Space
+
+`ContentModerationAction`
+
+- `action_type`: `label`, `moderate`, or `escalate`
+- `category`: one of `safe`, `harassment`, `hate`, `misinformation`, `spam`, `other`
+- `moderate_action`: one of `remove`, `warn`, `flag`
+- `reason`: optional free-text rationale
+
+### Observation Space
+
+`ContentModerationObservation`
+
+- `post_text`: current content to review
+- `thread_history`: prior posts in the thread
+- `done`: whether the episode has finished
+- `reward`: normalized reward in the `0.0` to `1.0` range
+- `info`: grader metadata such as the correct category and severity
+
+### Setup
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -e .
+python inference.py
+```
+
+### Baseline Scores
+
+The baseline script runs three tasks and emits reproducible scores. In the current local run, the baseline achieved:
+
+- `easy`: `1.00`
+- `medium`: `1.00`
+- `hard`: `1.00`
+
 [![PyPI](https://img.shields.io/pypi/v/openenv-core?color=blue)](https://pypi.org/project/openenv-core/)
 [![Discord](https://img.shields.io/badge/Discord-OpenEnv-7289da?style=flat&logo=discord&logoColor=white)](https://discord.gg/YsTYBh6PD9)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/meta-pytorch/OpenEnv/blob/main/examples/OpenEnv_Tutorial.ipynb)
