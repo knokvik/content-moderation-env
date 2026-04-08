@@ -22,6 +22,11 @@ app = create_app(
 )
 
 
+@app.get("/")
+def root():
+    return {"status": "healthy", "name": "content_moderation_env"}
+
+
 def main():
     import argparse
     import uvicorn
