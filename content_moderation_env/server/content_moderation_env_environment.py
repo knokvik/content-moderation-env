@@ -111,17 +111,7 @@ class ContentModerationEnvironment(Environment):
             )
 
         gt = self.ground_truth[self.current_step]
-        reward = 0.0
-
-        if action.action_type == ModerationActionType.LABEL:
-            if action.category == ContentCategory(gt["true_category"]):
-                reward = 1.0
-            else:
-                reward = 0.0
-        elif action.action_type == ModerationActionType.MODERATE:
-            reward = 1.0 if action.moderate_action else 0.0
-        elif action.action_type == ModerationActionType.ESCALATE:
-            reward = 1.0 if gt["severity"] >= 1 else 0.0
+        reward = self._score_action(action, gt)
 
         self.current_step += 1
         done = self.current_step >= len(self.ground_truth)
@@ -134,9 +124,100 @@ class ContentModerationEnvironment(Environment):
             reward=reward,
             info={
                 "correct_category": gt["true_category"],
+                "severity": gt["severity"],
+                "reward_breakdown": self._reward_breakdown(action, gt, reward),
                 "grader_feedback": f"Reward: {reward:.2f}",
             },
         )
+
+    def _score_action(self, action: ContentModerationAction, gt: dict[str, Any]) -> float:
+        true_category = str(gt["true_category"])
+        severity = int(gt["severity"])
+
+        if action.action_type == ModerationActionType.LABEL:
+            return self._score_label(action.category, true_category, severity)
+        if action.action_type == ModerationActionType.MODERATE:
+            return self._score_moderate(action.moderate_action, true_category, severity)
+        if action.action_type == ModerationActionType.ESCALATE:
+            return self._score_escalate(true_category, severity)
+        return 0.0
+
+    def _score_label(
+        self,
+        predicted: Optional[ContentCategory],
+        true_category: str,
+        severity: int,
+    ) -> float:
+        if predicted is None:
+            return 0.0
+
+        predicted_value = predicted.value
+        if predicted_value == true_category:
+            return 1.0
+
+        true_is_safe = true_category == ContentCategory.SAFE.value
+        predicted_is_safe = predicted_value == ContentCategory.SAFE.value
+
+        # Partial credit for getting the broad safety decision right even if the
+        # exact harmful category is wrong.
+        if true_is_safe and not predicted_is_safe:
+            return 0.25
+        if not true_is_safe and not predicted_is_safe:
+            return 0.6 if severity >= 1 else 0.4
+        if not true_is_safe and predicted_is_safe:
+            return 0.0
+        return 0.2
+
+    def _score_moderate(
+        self,
+        moderate_action: Optional[str],
+        true_category: str,
+        severity: int,
+    ) -> float:
+        if moderate_action is None:
+            return 0.0
+
+        if true_category == ContentCategory.SAFE.value:
+            # Over-moderation is not ideal, but flagging/warning a safe post is
+            # still a weakly useful intervention compared to doing nothing.
+            return 0.2 if moderate_action in {"warn", "flag"} else 0.1
+
+        if severity >= 2:
+            if moderate_action == "remove":
+                return 1.0
+            if moderate_action == "flag":
+                return 0.85
+            if moderate_action == "warn":
+                return 0.7
+        else:
+            if moderate_action == "flag":
+                return 0.9
+            if moderate_action == "warn":
+                return 0.8
+            if moderate_action == "remove":
+                return 0.75
+
+        return 0.0
+
+    def _score_escalate(self, true_category: str, severity: int) -> float:
+        if true_category == ContentCategory.SAFE.value:
+            return 0.0
+        if severity >= 2:
+            return 1.0
+        return 0.7
+
+    def _reward_breakdown(
+        self,
+        action: ContentModerationAction,
+        gt: dict[str, Any],
+        reward: float,
+    ) -> dict[str, Any]:
+        return {
+            "action_type": action.action_type.value,
+            "true_category": gt["true_category"],
+            "severity": gt["severity"],
+            "reward": round(reward, 3),
+        }
 
     @property
     def state(self) -> ContentModerationState:

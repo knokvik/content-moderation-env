@@ -36,10 +36,10 @@ Each step asks the agent to label, moderate, or escalate content and returns a r
 
 ## Reward Logic
 
-- Correct `label` gets positive reward.
-- Wrong `label` gets penalty, with larger penalty on severe harmful content.
-- `moderate` gets reward if a moderation action is supplied.
-- `escalate` gets reward on medium/high severity content and penalty on safe content.
+- Rewards are normalized to the `0.0` - `1.0` range.
+- Correct `label` gets full reward, while partially-correct labels get partial credit.
+- `moderate` gives higher reward for better moderation choices on harmful content.
+- `escalate` gets reward on medium/high severity content and zero on safe content.
 
 ## Local Run
 
