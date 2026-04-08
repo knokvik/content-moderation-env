@@ -140,7 +140,7 @@ class ContentModerationEnvironment(Environment):
             return self._score_moderate(action.moderate_action, true_category, severity)
         if action.action_type == ModerationActionType.ESCALATE:
             return self._score_escalate(true_category, severity)
-        return 0.0
+        return 0.01
 
     def _score_label(
         self,
@@ -149,11 +149,11 @@ class ContentModerationEnvironment(Environment):
         severity: int,
     ) -> float:
         if predicted is None:
-            return 0.0
+            return 0.01
 
         predicted_value = predicted.value
         if predicted_value == true_category:
-            return 1.0
+            return 0.99
 
         true_is_safe = true_category == ContentCategory.SAFE.value
         predicted_is_safe = predicted_value == ContentCategory.SAFE.value
@@ -165,7 +165,7 @@ class ContentModerationEnvironment(Environment):
         if not true_is_safe and not predicted_is_safe:
             return 0.6 if severity >= 1 else 0.4
         if not true_is_safe and predicted_is_safe:
-            return 0.0
+            return 0.01
         return 0.2
 
     def _score_moderate(
@@ -175,7 +175,7 @@ class ContentModerationEnvironment(Environment):
         severity: int,
     ) -> float:
         if moderate_action is None:
-            return 0.0
+            return 0.01
 
         if true_category == ContentCategory.SAFE.value:
             # Over-moderation is not ideal, but flagging/warning a safe post is
@@ -184,7 +184,7 @@ class ContentModerationEnvironment(Environment):
 
         if severity >= 2:
             if moderate_action == "remove":
-                return 1.0
+                return 0.99
             if moderate_action == "flag":
                 return 0.85
             if moderate_action == "warn":
@@ -197,13 +197,13 @@ class ContentModerationEnvironment(Environment):
             if moderate_action == "remove":
                 return 0.75
 
-        return 0.0
+        return 0.01
 
     def _score_escalate(self, true_category: str, severity: int) -> float:
         if true_category == ContentCategory.SAFE.value:
-            return 0.0
+            return 0.01
         if severity >= 2:
-            return 1.0
+            return 0.99
         return 0.7
 
     def _reward_breakdown(
