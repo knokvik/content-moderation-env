@@ -195,7 +195,7 @@ async def run_task(diff: str, task_name: str) -> None:
             )
         except Exception as exc:
             print(
-                f"[STEP] step={step} action=error reward=0.00 done=true error={exc}",
+                f"[STEP] step={step} action=error reward=0.05 done=true error={exc}",
                 flush=True,
             )
             break

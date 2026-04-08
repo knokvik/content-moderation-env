@@ -28,7 +28,7 @@ This repository includes a real-world OpenEnv submission focused on content mode
 - `post_text`: current content to review
 - `thread_history`: prior posts in the thread
 - `done`: whether the episode has finished
-- `reward`: normalized reward in the `0.0` to `1.0` range
+- `reward`: normalized reward strictly inside the `0.0` to `1.0` range
 - `info`: grader metadata such as the correct category and severity
 
 ### Setup
@@ -44,9 +44,9 @@ python inference.py
 
 The baseline script runs three tasks and emits reproducible scores. In the current local run, the baseline achieved:
 
-- `easy`: `1.00`
-- `medium`: `1.00`
-- `hard`: `1.00`
+- `easy`: `0.95`
+- `medium`: `0.95`
+- `hard`: `0.95`
 
 [![PyPI](https://img.shields.io/pypi/v/openenv-core?color=blue)](https://pypi.org/project/openenv-core/)
 [![Discord](https://img.shields.io/badge/Discord-OpenEnv-7289da?style=flat&logo=discord&logoColor=white)](https://discord.gg/YsTYBh6PD9)

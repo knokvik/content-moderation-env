@@ -50,6 +50,8 @@ DATASET = [
 
 class ContentModerationEnvironment(Environment):
     SUPPORTS_CONCURRENT_SESSIONS: bool = True
+    _MIN_REWARD = 0.05
+    _MAX_REWARD = 0.95
 
     def __init__(self, difficulty: str = "medium"):
         self.difficulty = difficulty
@@ -82,7 +84,7 @@ class ContentModerationEnvironment(Environment):
             post_text=first_post,
             thread_history=[],
             done=False,
-            reward=0.0,
+            reward=self._MIN_REWARD,
             info={"difficulty": self.difficulty},
         )
 
@@ -98,7 +100,7 @@ class ContentModerationEnvironment(Environment):
                 post_text="",
                 thread_history=[],
                 done=True,
-                reward=0.0,
+                reward=self._MIN_REWARD,
                 info={"error": "Environment not reset"},
             )
         if self.current_step >= len(self.ground_truth):
@@ -106,12 +108,13 @@ class ContentModerationEnvironment(Environment):
                 post_text="",
                 thread_history=[g["text"] for g in self.ground_truth],
                 done=True,
-                reward=0.0,
+                reward=self._MIN_REWARD,
                 info={"error": "Episode already finished"},
             )
 
         gt = self.ground_truth[self.current_step]
-        reward = self._score_action(action, gt)
+        raw_reward = self._score_action(action, gt)
+        reward = self._normalize_reward(raw_reward)
 
         self.current_step += 1
         done = self.current_step >= len(self.ground_truth)
@@ -125,6 +128,7 @@ class ContentModerationEnvironment(Environment):
             info={
                 "correct_category": gt["true_category"],
                 "severity": gt["severity"],
+                "raw_reward": round(raw_reward, 3),
                 "reward_breakdown": self._reward_breakdown(action, gt, reward),
                 "grader_feedback": f"Reward: {reward:.2f}",
             },
@@ -150,7 +154,7 @@ class ContentModerationEnvironment(Environment):
     ) -> float:
         if predicted is None:
             return 0.01
-
+        
         predicted_value = predicted.value
         if predicted_value == true_category:
             return 0.99
